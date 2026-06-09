@@ -59,11 +59,17 @@ def search_kin(keyword: str, display: int = 3) -> list[dict]:
 
 
 def search_all_keywords(keywords: list[dict]) -> list[dict]:
-    """키워드 병렬 검색 - 모든 키워드를 동시에 호출해서 속도 향상."""
+    """키워드 병렬 검색 - rate limit 방지를 위해 3개 동시 처리."""
+    import time
     from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    def _search_with_delay(kw):
+        time.sleep(0.3)
+        return search_kin(kw["keyword"])
+
     results = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(search_kin, kw["keyword"]): kw for kw in keywords}
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {executor.submit(_search_with_delay, kw): kw for kw in keywords}
         for future in as_completed(futures):
             results.extend(future.result())
     return results

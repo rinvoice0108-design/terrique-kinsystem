@@ -24,7 +24,7 @@ def _is_workday() -> bool:
     today = date.today()
     if today.weekday() >= 5:  # 토(5), 일(6)
         return False
-    kr_holidays = holidays.Korea(years=today.year)
+    kr_holidays = holidays.SouthKorea(years=today.year)
     return today not in kr_holidays
 
 

@@ -18,7 +18,7 @@ def is_workday() -> bool:
     if today.weekday() >= 5:
         print(f"[skip] 주말 ({today})")
         return False
-    kr_holidays = holidays.Korea(years=today.year)
+    kr_holidays = holidays.SouthKorea(years=today.year)
     if today in kr_holidays:
         print(f"[skip] 공휴일 ({today}: {kr_holidays[today]})")
         return False
