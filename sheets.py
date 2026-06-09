@@ -136,15 +136,14 @@ def get_all_active_keywords() -> list[dict]:
         ss = _get_ss()
         result = []
 
-        for tab, source in [("내 키워드", "manual"), ("AI 추천 키워드", "ai")]:
-            ws = ss.worksheet(tab)
-            for row in ws.get_all_records():
-                kw = str(row.get("키워드", "")).strip()
-                active = str(row.get("활성(O/X)", "O")).strip().upper()
-                if kw and active == "O":
-                    result.append({"keyword": kw, "source": source})
+        ws = ss.worksheet("내 키워드")
+        for row in ws.get_all_records():
+            kw = str(row.get("키워드", "")).strip()
+            active = str(row.get("활성(O/X)", "O")).strip().upper()
+            if kw and active == "O":
+                result.append({"keyword": kw, "source": "manual"})
 
-        print(f"[sheets] 키워드 {len(result)}개 로드 (내 키워드 + AI 추천)")
+        print(f"[sheets] 키워드 {len(result)}개 로드 (내 키워드)")
         return result
 
     except Exception as e:
