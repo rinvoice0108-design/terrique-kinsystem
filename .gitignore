@@ -1,0 +1,20 @@
+# 환경 변수 및 비밀 키
+.env
+google_credentials.json
+
+# 데이터베이스
+*.db
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 임시 스크립트
+add_keywords.py
+test_scraper.py
+
+# OS
+.DS_Store
+Thumbs.db

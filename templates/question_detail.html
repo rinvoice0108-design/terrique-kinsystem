@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}답변 가이드 · 테리크 지식인{% endblock %}
+
+{% block content %}
+<!-- 뒤로가기 -->
+<div class="mb-3">
+  <a href="/" class="text-muted text-decoration-none small">
+    <i class="bi bi-arrow-left me-1"></i>대시보드로
+  </a>
+</div>
+
+<div class="row g-4">
+  <!-- 왼쪽: 원본 질문 -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-question-circle-fill text-primary me-2"></i>원본 질문</h6>
+      </div>
+      <div class="card-body">
+        <span class="kw-badge mb-2 d-inline-block">{{ q.keyword }}</span>
+        <h6 class="mt-2 mb-3" style="line-height:1.5;">{{ q.title }}</h6>
+
+        {% if q.content %}
+        <div class="bg-light rounded p-3 mb-3" style="font-size:13px;line-height:1.6;color:#555;">
+          {{ q.content }}
+        </div>
+        {% endif %}
+
+        <small class="text-muted d-block mb-3">
+          <i class="bi bi-clock me-1"></i>{{ q.found_at }}
+        </small>
+
+        <a href="{{ q.url }}" target="_blank" class="btn btn-primary w-100">
+          <i class="bi bi-box-arrow-up-right me-1"></i>네이버 지식인 원문 보기
+        </a>
+        <a href="{{ q.url }}" target="_blank" class="btn btn-success w-100 mt-2">
+          <i class="bi bi-pencil-fill me-1"></i>지식인에서 답변 달기
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 오른쪽: AI 답변 가이드 -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-stars text-warning me-2"></i>AI 답변 가이드</h6>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" onclick="regenerate(this)">
+            <i class="bi bi-arrow-clockwise me-1"></i>재생성
+          </button>
+          <button class="btn btn-sm btn-outline-success" onclick="copyGuide()">
+            <i class="bi bi-clipboard me-1"></i>전체 복사
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="guide-raw" style="display:none;"></div>
+        {% if q.answer_guide %}
+        <div id="guide-display" class="guide-body">{{ q.answer_guide }}</div>
+        {% else %}
+        <div id="guide-loading" class="text-center py-5 text-muted">
+          <div class="mb-2" style="font-size:1.5rem;">
+            <i class="bi bi-stars spin"></i>
+          </div>
+          <div>AI 가이드 생성 중...</div>
+          <small>약 20~30초 소요됩니다</small>
+        </div>
+        <div id="guide-display" class="guide-body" style="display:none;"></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 답변 템플릿 추출 / 클립보드 복사 안내 -->
+    <div class="card mt-3" style="border-left: 4px solid var(--brand);">
+      <div class="card-body py-3">
+        <div class="d-flex align-items-start gap-3">
+          <i class="bi bi-info-circle-fill text-primary mt-1"></i>
+          <div style="font-size:13px;color:#555;line-height:1.7;">
+            <strong>답변 달기 순서:</strong><br>
+            1. 위 "추천 답변 템플릿" 부분을 <strong>복사</strong>하세요<br>
+            2. <strong>"지식인에서 답변 달기"</strong> 버튼을 클릭하세요<br>
+            3. 네이버 지식인에서 답변창에 붙여넣기 후 내용을 자연스럽게 수정하세요<br>
+            4. 너무 광고 느낌이 나지 않도록 개인적인 경험담을 추가하면 효과적입니다
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 가이드가 없으면 AJAX로 로드
+{% if not q.answer_guide %}
+window.addEventListener('DOMContentLoaded', () => {
+  fetch('/api/guide/{{ q.id }}')
+    .then(r => r.json())
+    .then(data => {
+      if (data.guide) {
+        document.getElementById('guide-raw').textContent = data.guide;
+        const display = document.getElementById('guide-display');
+        display.innerHTML = marked.parse(data.guide);
+        display.style.display = '';
+        document.getElementById('guide-loading').style.display = 'none';
+      }
+    });
+});
+{% else %}
+window.addEventListener('DOMContentLoaded', () => {
+  const raw = `{{ q.answer_guide | e }}`;
+  document.getElementById('guide-raw').textContent = raw;
+  document.getElementById('guide-display').innerHTML = marked.parse(raw);
+});
+{% endif %}
+
+function copyGuide() {
+  const text = document.getElementById('guide-raw').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('클립보드에 복사되었습니다!');
+  });
+}
+
+async function regenerate(btn) {
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-arrow-clockwise spin me-1"></i>생성 중...';
+
+  try {
+    const res = await fetch('/api/regenerate/{{ q.id }}', { method: 'POST' });
+    const data = await res.json();
+    if (data.guide) {
+      document.getElementById('guide-raw').textContent = data.guide;
+      document.getElementById('guide-display').textContent = data.guide;
+      document.getElementById('guide-display').innerHTML = marked.parse(data.guide);
+    }
+  } catch(e) {
+    alert('재생성 중 오류가 발생했습니다.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e293b;color:white;padding:12px 20px;border-radius:8px;font-size:14px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+</script>
+{% endblock %}

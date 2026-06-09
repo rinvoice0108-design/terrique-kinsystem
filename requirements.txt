@@ -1,0 +1,10 @@
+flask==3.0.3
+requests==2.32.3
+anthropic==0.40.0
+apscheduler==3.10.4
+python-dotenv==1.0.1
+beautifulsoup4==4.12.3
+markdown==3.7
+gspread==6.1.2
+google-auth==2.29.0
+holidays>=0.98

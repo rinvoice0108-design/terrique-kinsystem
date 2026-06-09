@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}질문 생성기 · 테리크 지식인{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4 class="fw-bold mb-1">씨드 질문 생성기</h4>
+  <small class="text-muted">네이버 지식인에 올릴 마케팅용 질문을 AI가 생성합니다</small>
+</div>
+
+<!-- 생성 폼 -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="POST">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label fw-semibold">질문 주제</label>
+          <input type="text" name="topic" class="form-control"
+                 placeholder="예: 결혼 답례품, 수건 선물, 돌잔치 답례품"
+                 value="{{ topic }}" required>
+          <div class="form-text">테리크와 연관시킬 주제를 입력하세요</div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">생성 개수</label>
+          <select name="count" class="form-select">
+            <option value="3">3개</option>
+            <option value="5" selected>5개</option>
+            <option value="7">7개</option>
+            <option value="10">10개</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-magic me-1"></i>AI 질문 생성
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if result %}
+<!-- 생성 결과 -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h6 class="mb-0"><i class="bi bi-stars text-warning me-2"></i>생성된 씨드 질문 — 주제: <em>{{ topic }}</em></h6>
+    <button class="btn btn-outline-success btn-sm" onclick="copyAll()">
+      <i class="bi bi-clipboard me-1"></i>전체 복사
+    </button>
+  </div>
+  <div class="card-body">
+    <div id="result-raw" style="display:none;">{{ result }}</div>
+    <div id="result-display" class="guide-body render-md">{{ result }}</div>
+  </div>
+</div>
+
+<!-- 사용 가이드 -->
+<div class="card" style="border-left:4px solid #28a745;">
+  <div class="card-body py-3">
+    <div class="d-flex gap-3">
+      <i class="bi bi-info-circle-fill text-success mt-1"></i>
+      <div style="font-size:13px;color:#555;line-height:1.7;">
+        <strong>씨드 질문 활용 방법:</strong><br>
+        1. 위에서 마음에 드는 질문을 선택하세요<br>
+        2. <a href="https://kin.naver.com" target="_blank">네이버 지식인</a>에서 해당 카테고리에 질문을 등록하세요<br>
+        3. 나중에 다른 계정 또는 지인에게 부탁해 테리크를 자연스럽게 소개하는 답변을 달아달라고 하세요<br>
+        4. 채택된 질문은 검색에 오래 노출되어 지속적인 마케팅 효과가 있습니다<br>
+        <small class="text-muted mt-1 d-block">⚠️ 지식인 운영 정책을 준수하며 자연스러운 답변 위주로 활용하세요</small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if history and not result %}
+<!-- 이전 생성 이력 -->
+<div class="card">
+  <div class="card-header">
+    <h6 class="mb-0 text-muted">최근 생성 이력</h6>
+  </div>
+  <div class="list-group list-group-flush">
+    {% for h in history %}
+    <div class="list-group-item">
+      <div class="d-flex justify-content-between mb-1">
+        <span class="kw-badge">{{ h.topic }}</span>
+        <small class="text-muted">{{ h.created_at }}</small>
+      </div>
+      <small class="text-muted">{{ h.result[:100] }}...</small>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyAll() {
+  const text = document.getElementById('result-raw').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target.closest('button');
+    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>복사됨!';
+    setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>전체 복사'; }, 2000);
+  });
+}
+</script>
+{% endblock %}

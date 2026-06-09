@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}키워드 관리 · 테리크 지식인{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">키워드 관리</h4>
+    <small class="text-muted">Google Sheets에서 직접 편집 · Claude가 매주 자동 추천</small>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-success btn-sm" onclick="runKeywordReco(this)">
+      <i class="bi bi-stars me-1"></i>지금 AI 추천 실행
+    </button>
+    {% if sheet_stats.sheet_url %}
+    <a href="{{ sheet_stats.sheet_url }}" target="_blank" class="btn btn-success btn-sm">
+      <i class="bi bi-box-arrow-up-right me-1"></i>Google Sheets 열기
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if not sheet_stats.configured %}
+<!-- Google Sheets 미설정 안내 -->
+<div class="card border-warning mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Google Sheets 연결 필요</h6>
+    <p class="mb-3 text-muted">아래 순서대로 설정하면 Google Sheets가 키워드 관리 대시보드가 됩니다.</p>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="bg-light rounded p-3" style="font-size:13px;">
+          <div class="fw-bold mb-2">① 구글 서비스 계정 만들기</div>
+          <ol class="text-muted ps-3 mb-0" style="line-height:2;">
+            <li><a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> 접속</li>
+            <li>새 프로젝트 생성</li>
+            <li>API 및 서비스 → Google Sheets API 활성화</li>
+            <li>서비스 계정 생성 → JSON 키 다운로드</li>
+            <li>JSON 파일을 프로젝트 폴더에 <code>google_credentials.json</code>으로 저장</li>
+          </ol>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="bg-light rounded p-3" style="font-size:13px;">
+          <div class="fw-bold mb-2">② 구글 시트 연결</div>
+          <ol class="text-muted ps-3 mb-0" style="line-height:2;">
+            <li>구글 드라이브에서 새 스프레드시트 생성</li>
+            <li>서비스 계정 이메일로 편집 권한 공유</li>
+            <li>URL에서 Sheet ID 복사 (<code>/d/</code> 뒤 긴 문자열)</li>
+            <li><code>.env</code> 파일에 <code>GOOGLE_SHEET_ID=복사한ID</code> 입력</li>
+            <li>서버 재시작 → 탭 자동 생성</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+
+<!-- 연결 상태 -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card text-center" style="border-top:3px solid #1a73e8;">
+      <div class="card-body py-3">
+        <div style="font-size:2rem;font-weight:800;color:#1a73e8;">{{ manual|length }}</div>
+        <div class="text-muted" style="font-size:13px;">내가 입력한 키워드</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-center" style="border-top:3px solid #0f9d58;">
+      <div class="card-body py-3">
+        <div style="font-size:2rem;font-weight:800;color:#0f9d58;">{{ ai_kws|length }}</div>
+        <div class="text-muted" style="font-size:13px;">AI 추천 키워드 (활성)</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-center" style="border-top:3px solid #e94560;">
+      <div class="card-body py-3">
+        <div style="font-size:2rem;font-weight:800;color:#e94560;">{{ (manual|length) + (ai_kws|length) }}</div>
+        <div class="text-muted" style="font-size:13px;">총 활성 키워드</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- 내 키워드 -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center" style="border-left:4px solid #1a73e8;">
+        <div>
+          <h6 class="mb-0 fw-bold">내 키워드</h6>
+          <small class="text-muted">Google Sheets "내 키워드" 탭에서 직접 수정</small>
+        </div>
+        <span class="badge" style="background:#1a73e8;">{{ manual|length }}개</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:50%">키워드</th>
+              <th>분류</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for kw in manual %}
+            <tr>
+              <td><i class="bi bi-search text-muted me-1" style="font-size:11px;"></i>{{ kw.keyword }}</td>
+              <td><small class="text-muted">—</small></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-center text-muted py-4">키워드 없음</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 키워드 추가 안내 -->
+    <div class="card mt-3" style="border-left:4px solid #1a73e8;background:#f0f7ff;">
+      <div class="card-body py-3" style="font-size:13px;">
+        <strong>키워드 추가 방법</strong><br>
+        <span class="text-muted">
+          Google Sheets → "내 키워드" 탭 → 새 행에 키워드 입력 → 활성(O/X) 열에 O 입력
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI 추천 키워드 -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center" style="border-left:4px solid #0f9d58;">
+        <div>
+          <h6 class="mb-0 fw-bold">AI 추천 키워드</h6>
+          <small class="text-muted">Claude가 매주 월요일 자동 추가</small>
+        </div>
+        <span class="badge bg-success">{{ ai_kws|length }}개</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:50%">키워드</th>
+              <th>분류</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for kw in ai_kws %}
+            <tr>
+              <td>
+                <span class="badge bg-success me-1" style="font-size:9px;">AI</span>
+                {{ kw.keyword }}
+              </td>
+              <td><small class="text-muted">—</small></td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="2" class="text-center text-muted py-4">
+                아직 AI 추천 없음<br>
+                <small>"지금 AI 추천 실행" 버튼을 눌러보세요</small>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AI 추천 안내 -->
+    <div class="card mt-3" style="border-left:4px solid #0f9d58;background:#f0fdf4;">
+      <div class="card-body py-3" style="font-size:13px;">
+        <strong>AI 추천 비활성화 방법</strong><br>
+        <span class="text-muted">
+          Google Sheets → "AI 추천 키워드" 탭 → 활성(O/X) 열을 X로 변경
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runKeywordReco(btn) {
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-stars spin me-1"></i>생성 중... (30초 소요)';
+  try {
+    const res = await fetch('/api/run-keyword-reco', { method: 'POST' });
+    const data = await res.json();
+    alert(`AI 추천 키워드 ${data.ai_count}개가 Google Sheets에 추가되었습니다!`);
+    location.reload();
+  } catch(e) {
+    alert('오류가 발생했습니다.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+</script>
+{% endblock %}

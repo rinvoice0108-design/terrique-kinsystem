@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}대시보드 · 테리크 지식인{% endblock %}
+
+{% block content %}
+<!-- 헤더 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">지식인 모니터링 대시보드</h4>
+    <small class="text-muted">새로운 관련 질문을 자동으로 감지하고 답변 가이드를 제공합니다</small>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    {% if unread_count > 0 %}
+      <span class="topbar-badge">미확인 {{ unread_count }}개</span>
+    {% endif %}
+    <button class="btn btn-outline-danger btn-sm" onclick="clearQuestions(this)">
+      <i class="bi bi-trash me-1"></i>질문 초기화
+    </button>
+    <button class="btn btn-outline-secondary btn-sm" onclick="sendDigest(this)">
+      <i class="bi bi-envelope me-1"></i>다이제스트 발송
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="runScan(this)">
+      <i class="bi bi-arrow-clockwise me-1"></i>지금 스캔
+    </button>
+  </div>
+</div>
+
+<!-- 스케줄 안내 -->
+<div class="d-flex gap-3 mb-4">
+  <div class="card flex-fill" style="border-left:4px solid #1a73e8;">
+    <div class="card-body py-2 px-3">
+      <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">수집 시각</div>
+      <div class="fw-semibold" style="font-size:14px;">매일 저녁 11시 · 하루 1회</div>
+    </div>
+  </div>
+  <div class="card flex-fill" style="border-left:4px solid #e94560;">
+    <div class="card-body py-2 px-3">
+      <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">이메일 리포트</div>
+      <div class="fw-semibold" style="font-size:14px;">매일 오전 9시 · 전날 질문 + 가이드</div>
+    </div>
+  </div>
+  <div class="card flex-fill" style="border-left:4px solid #28a745;">
+    <div class="card-body py-2 px-3">
+      <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;">답변 방법</div>
+      <div class="fw-semibold" style="font-size:14px;">이메일에서 바로 링크 클릭</div>
+    </div>
+  </div>
+</div>
+
+<!-- Google Sheets 키워드 현황 -->
+<div class="card mb-4" style="border-left:4px solid #0f9d58;">
+  <div class="card-body py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-table text-success fs-4"></i>
+        <div>
+          <div class="fw-bold" style="font-size:14px;">Google Sheets 키워드 관리</div>
+          {% if sheet_stats.configured %}
+            <small class="text-muted">
+              직접 입력 <strong class="text-primary">{{ sheet_stats.manual_count }}개</strong>
+              &nbsp;+&nbsp;
+              AI 추천 <strong class="text-success">{{ sheet_stats.ai_count }}개</strong>
+              &nbsp;=&nbsp; 총 <strong>{{ sheet_stats.total }}개</strong> 활성
+            </small>
+          {% else %}
+            <small class="text-danger">Google Sheets 미연결 — .env 설정 필요</small>
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/keywords" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-eye me-1"></i>키워드 현황
+        </a>
+        {% if sheet_stats.sheet_url %}
+        <a href="{{ sheet_stats.sheet_url }}" target="_blank" class="btn btn-success btn-sm">
+          <i class="bi bi-box-arrow-up-right me-1"></i>구글 시트 열기
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 질문 목록 -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-bold">발견된 질문 목록</h6>
+    <small class="text-muted">최근 100개</small>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:120px">키워드</th>
+          <th>질문 제목</th>
+          <th style="width:100px">상태</th>
+          <th style="width:200px">액션</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in questions %}
+        <tr {% if not q.is_read %}style="background:#fffbf0;"{% endif %}>
+          <td><span class="kw-badge">{{ q.keyword }}</span></td>
+          <td>
+            <div {% if not q.is_read %} class="fw-bold" {% endif %} style="font-size:13px;">{{ q.title }}</div>
+            <small class="text-muted">{{ q.found_at }}</small>
+          </td>
+          <td>
+            {% if not q.is_read %}
+              <span class="badge bg-danger">NEW</span>
+            {% elif q.answer_guide %}
+              <span class="badge bg-success">가이드완료</span>
+            {% else %}
+              <span class="badge bg-light text-secondary border">확인함</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ q.url }}" target="_blank" class="btn btn-success" style="font-size:11px;padding:3px 8px;">
+                <i class="bi bi-box-arrow-up-right me-1"></i>네이버 답변
+              </a>
+              <a href="/question/{{ q.id }}" class="btn btn-outline-primary" style="font-size:11px;padding:3px 8px;">
+                AI 가이드
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center py-5 text-muted">
+            <i class="bi bi-search" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.3;"></i>
+            발견된 질문이 없습니다.<br>
+            <small>"지금 스캔" 버튼을 누르거나 API 키를 설정해보세요.</small>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runScan(btn) {
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-arrow-clockwise spin me-1"></i>스캔 중...';
+  try {
+    await fetch('/api/scan', { method: 'POST' });
+    location.reload();
+  } catch(e) {
+    alert('스캔 중 오류가 발생했습니다.');
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+async function clearQuestions(btn) {
+  if (!confirm('모든 질문을 삭제하고 초기화하시겠습니까?')) return;
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-trash spin me-1"></i>초기화 중...';
+  try {
+    await fetch('/api/clear-questions', { method: 'POST' });
+    location.reload();
+  } catch(e) {
+    alert('오류가 발생했습니다.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+async function sendDigest(btn) {
+  const today = new Date().toISOString().slice(0, 10);
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-envelope spin me-1"></i>발송 중...';
+  try {
+    const res = await fetch('/api/send-digest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: today })
+    });
+    const data = await res.json();
+    alert(data.status === 'ok' ? '다이제스트 이메일이 발송되었습니다!' : '발송 실패 — .env 이메일 설정을 확인하세요.');
+  } catch(e) {
+    alert('오류가 발생했습니다.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+</script>
+{% endblock %}

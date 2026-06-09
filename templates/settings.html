@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}키워드 설정 · 테리크 지식인{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <h4 class="fw-bold mb-1">키워드 설정</h4>
+  <small class="text-muted">모니터링할 키워드를 관리합니다</small>
+</div>
+
+<div class="row g-4">
+  <!-- 키워드 목록 -->
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0 fw-bold">모니터링 키워드 ({{ keywords|length }}개)</h6>
+      </div>
+      <div class="card-body p-0">
+        {% if keywords %}
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>키워드</th>
+              <th>등록일</th>
+              <th style="width:80px">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for kw in keywords %}
+            <tr>
+              <td class="text-muted small">{{ loop.index }}</td>
+              <td><span class="kw-badge">{{ kw.keyword }}</span></td>
+              <td><small class="text-muted">{{ kw.created_at or '-' }}</small></td>
+              <td>
+                <form method="POST" onsubmit="return confirm('키워드를 삭제할까요?')">
+                  <input type="hidden" name="action" value="delete_keyword">
+                  <input type="hidden" name="keyword_id" value="{{ kw.id }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-search" style="font-size:2rem;opacity:.3;display:block;margin-bottom:8px;"></i>
+          등록된 키워드가 없습니다
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 키워드 추가 + 설정 안내 -->
+  <div class="col-md-5">
+    <!-- 키워드 추가 폼 -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-plus-circle text-success me-1"></i>키워드 추가</h6>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          <input type="hidden" name="action" value="add_keyword">
+          <div class="input-group">
+            <input type="text" name="keyword" class="form-control"
+                   placeholder="예: 수건 선물 추천" required>
+            <button type="submit" class="btn btn-success">추가</button>
+          </div>
+          <div class="form-text mt-2">
+            추천 키워드: 답례품 수건, 수건 선물 세트, 호텔 수건 추천, 면 수건 추천...
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- API 키 설정 안내 -->
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0 fw-bold"><i class="bi bi-key-fill text-warning me-1"></i>API 키 설정 안내</h6>
+      </div>
+      <div class="card-body" style="font-size:13px;">
+        <p class="mb-3 text-muted">API 키는 프로젝트 폴더의 <code>.env</code> 파일에서 설정합니다.</p>
+
+        <div class="mb-3">
+          <div class="fw-semibold mb-1">① 네이버 검색 API (무료)</div>
+          <ol class="text-muted ps-3" style="line-height:2;">
+            <li><a href="https://developers.naver.com" target="_blank">developers.naver.com</a> 접속</li>
+            <li>Application 등록 → 검색 API 선택</li>
+            <li>Client ID / Client Secret 발급</li>
+            <li><code>.env</code>에 입력</li>
+          </ol>
+        </div>
+
+        <div class="mb-3">
+          <div class="fw-semibold mb-1">② Claude AI API</div>
+          <ol class="text-muted ps-3" style="line-height:2;">
+            <li><a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> 접속</li>
+            <li>API Keys → Create Key</li>
+            <li><code>.env</code>에 입력</li>
+          </ol>
+        </div>
+
+        <div>
+          <div class="fw-semibold mb-1">③ Gmail 이메일 알림</div>
+          <ol class="text-muted ps-3" style="line-height:2;">
+            <li>구글 계정 → 2단계 인증 활성화</li>
+            <li>앱 비밀번호 생성 (16자리)</li>
+            <li><code>.env</code>에 입력</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
