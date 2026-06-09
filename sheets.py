@@ -138,12 +138,14 @@ def get_all_active_keywords() -> list[dict]:
 
         ws = ss.worksheet("내 키워드")
         for row in ws.get_all_records():
+            if len(result) >= 20:
+                break
             kw = str(row.get("키워드", "")).strip()
             active = str(row.get("활성(O/X)", "O")).strip().upper()
             if kw and active == "O":
                 result.append({"keyword": kw, "source": "manual"})
 
-        print(f"[sheets] 키워드 {len(result)}개 로드 (내 키워드)")
+        print(f"[sheets] 키워드 {len(result)}개 로드 (내 키워드, 최대 20개)")
         return result
 
     except Exception as e:
