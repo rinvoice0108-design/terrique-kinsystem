@@ -8,14 +8,6 @@ def _clean(text: str) -> str:
     return text.replace("<b>", "").replace("</b>", "").strip()
 
 
-BRAND_WORDS = ["수건", "답례품", "타올", "타월"]
-
-def _is_relevant(title: str) -> bool:
-    """제목에 브랜드 핵심 단어(수건/답례품)가 포함된 질문만 수집."""
-    return any(w in title for w in BRAND_WORDS)
-
-
-
 
 def search_kin(keyword: str, display: int = 3) -> list[dict]:
     """
@@ -52,8 +44,6 @@ def search_kin(keyword: str, display: int = 3) -> list[dict]:
         title = _clean(item.get("title", ""))
         description = _clean(item.get("description", ""))
         pub_date = item.get("pubDate", "")
-        if not _is_relevant(title):
-            continue
         results.append({"title": title, "url": item["link"], "description": description, "keyword": keyword})
     return results
 
