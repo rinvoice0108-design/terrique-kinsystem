@@ -2,7 +2,7 @@ name: 테리크 지식인 일일 리포트
 
 on:
   schedule:
-    - cron: '37 0 * * 1-5'  # KST 09:37 (UTC 00:37), 월~금
+    - cron: '57 22 * * 0-4'  # KST 07:57 (UTC 22:57), 월~금
   workflow_dispatch:         # 수동 실행 버튼
 
 jobs:
