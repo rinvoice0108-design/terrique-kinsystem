@@ -39,13 +39,20 @@ def main():
     keywords = sheets.get_all_active_keywords()
     print(f"[collect] 키워드 {len(keywords)}개 검색 시작")
     results = scraper.search_all_keywords(keywords)
+
+    # 중복 방지: 이전에 수집된 URL 제외
+    seen_urls = sheets.get_seen_urls()
+    new_results = [item for item in results if item["url"] not in seen_urls]
+    print(f"[collect] 전체 {len(results)}개 중 신규 {len(new_results)}개 (중복 {len(results) - len(new_results)}개 제외)")
+
     saved = sum(
-        1 for item in results
+        1 for item in new_results
         if database.save_question(item["url"], item["title"], item["description"], item["keyword"])
     )
+    sheets.save_seen_urls(new_results)
     print(f"[collect] 신규 질문 {saved}개 저장")
 
-    # 완성 답변 생성
+    # 완성 답변 생성 (오늘 신규 수집분만)
     grouped = database.get_questions_for_digest(today_str)
     all_q = [q for qs in grouped.values() for q in qs]
     print(f"[ai] 완성 답변 생성 중 ({len(all_q)}개)...")

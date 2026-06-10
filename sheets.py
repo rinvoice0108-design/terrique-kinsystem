@@ -194,6 +194,46 @@ def write_ai_recommendations(recommendations: list[dict]) -> bool:
         return False
 
 
+# ── 수집 이력 (중복 방지) ─────────────────────────────────────────────────────
+
+HISTORY_TAB = "수집 이력"
+
+def _ensure_history_tab(ss):
+    try:
+        return ss.worksheet(HISTORY_TAB)
+    except gspread.exceptions.WorksheetNotFound:
+        ws = ss.add_worksheet(HISTORY_TAB, rows=5000, cols=4)
+        ws.append_row(["url", "title", "keyword", "found_at"])
+        return ws
+
+
+def get_seen_urls() -> set:
+    """이전에 수집된 URL 집합 반환. Sheets 미설정 시 빈 set."""
+    if not _is_configured():
+        return set()
+    try:
+        ws = _ensure_history_tab(_get_ss())
+        records = ws.get_all_records()
+        return {r["url"] for r in records if r.get("url")}
+    except Exception as e:
+        print(f"[sheets] 수집 이력 로드 실패: {e}")
+        return set()
+
+
+def save_seen_urls(items: list[dict]) -> None:
+    """새로 수집된 질문 URL을 이력 탭에 추가."""
+    if not _is_configured() or not items:
+        return
+    try:
+        ws = _ensure_history_tab(_get_ss())
+        today = date.today().strftime("%Y-%m-%d")
+        rows = [[item["url"], item.get("title", ""), item.get("keyword", ""), today] for item in items]
+        ws.append_rows(rows)
+        print(f"[sheets] 수집 이력 {len(rows)}개 저장")
+    except Exception as e:
+        print(f"[sheets] 수집 이력 저장 실패: {e}")
+
+
 def get_sheet_stats() -> dict:
     """대시보드 표시용 통계 반환."""
     if not _is_configured():
