@@ -131,11 +131,24 @@ def _build_seeds_section(seeds: list[dict]) -> str:
                         font-size:13px;line-height:1.8;color:#1e293b;">{content_text}</div>
           </div>
           <!-- 마케팅 포인트 -->
-          <div style="background:white;padding:10px 18px;">
+          <div style="background:white;padding:10px 18px;border-bottom:1px solid {border};">
             <div style="font-size:12px;color:{text_color};">
               💡 마케팅 효과: {s.get('tip','')}
             </div>
-          </div>
+          </div>"""
+        # 예상 답변이 있을 때만 표시
+        seed_answer = (s.get("seed_answer") or "").replace("\n", "<br>")
+        if seed_answer:
+            cards += f"""
+          <!-- 예상 답변 -->
+          <div style="background:#fffbeb;padding:14px 18px;">
+            <div style="font-size:11px;font-weight:700;color:#b45309;letter-spacing:.5px;margin-bottom:8px;">
+              📝 예상 답변 (이 질문에 달 답변 예시)
+            </div>
+            <div style="background:white;border:1px solid #fde68a;border-radius:8px;padding:14px;
+                        font-size:13px;line-height:1.8;color:#1e293b;white-space:pre-wrap;">{seed_answer}</div>
+          </div>"""
+        cards += """
         </div>
         """
 
@@ -267,9 +280,8 @@ def send_daily_digest(
   <!-- 사용 안내 -->
   <div style="background:#1e3a5f;padding:12px 24px;">
     <p style="margin:0;font-size:13px;color:#93c5fd;line-height:1.6;">
-      ① <strong>추천 답변</strong>을 먼저 달고 &nbsp;→&nbsp;
-      ② <strong>씨드 질문</strong>을 지식인에 올린 뒤 &nbsp;→&nbsp;
-      ③ 나머지 수집 질문 중 더 답변할 것을 골라보세요
+      ① <strong>수집한 답변</strong>을 먼저 달고 &nbsp;→&nbsp;
+      ② <strong>씨드 질문</strong>을 지식인에 질문하고 답변해보세요.
     </p>
   </div>
 

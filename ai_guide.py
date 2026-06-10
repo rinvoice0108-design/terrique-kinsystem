@@ -178,25 +178,28 @@ def generate_daily_seed_questions() -> list[dict]:
     "title": "질문 제목 (25자 이내)",
     "category": "지식인 카테고리 (예: 생활/가정 > 욕실용품)",
     "content": "질문 본문 (3~4문장)",
-    "tip": "이 질문의 마케팅 효과 한 줄"
+    "tip": "이 질문의 마케팅 효과 한 줄",
+    "seed_answer": "이 질문에 달 예상 답변 (200~300자, 테리크를 자연스럽게 1~2회 언급, 마지막에 스마트스토어 링크 포함: {config.BRAND_PRODUCT_URL})"
   }},
   {{
     "type": "수건",
     "title": "...",
     "category": "...",
     "content": "...",
-    "tip": "..."
+    "tip": "...",
+    "seed_answer": "..."
   }},
   {{
     "type": "답례품",
     "title": "...",
     "category": "...",
     "content": "...",
-    "tip": "..."
+    "tip": "...",
+    "seed_answer": "..."
   }}
 ]"""
 
-    raw = _call(prompt, max_tokens=1500)
+    raw = _call(prompt, max_tokens=2500)
     parsed = _parse_json(raw, [])
     return parsed[:3]
 
